@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Specialist Swarm — Architecture</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --panel: #171a23;
+    --panel-2: #1e222e;
+    --border: #2a2f3d;
+    --text: #e6e8ee;
+    --muted: #9aa2b1;
+    --coord: #d97757;      /* Anthropic clay */
+    --spec: #6ea8fe;
+    --skill: #59c39a;
+    --data: #c99cf0;
+    --critic: #f0c674;
+    --line: #3a4152;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 32px;
+  }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 28px; font-size: 13px; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 28px; font-size: 12px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+  .dot { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+
+  .col-wrap { display: grid; grid-template-columns: 1fr; gap: 24px; max-width: 1200px; margin: 0 auto; }
+  .stage {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .stage > h2 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--muted); margin: 0 0 16px; font-weight: 600;
+  }
+  .card {
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 16px; position: relative;
+  }
+  .card .title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  .card .meta { color: var(--muted); font-size: 11px; font-family: ui-monospace, monospace; }
+  .card .desc { color: var(--muted); font-size: 12px; margin-top: 6px; }
+  .badge {
+    display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 20px;
+    font-family: ui-monospace, monospace; margin-left: 6px; vertical-align: middle;
+  }
+
+  .coord-card { border-left: 3px solid var(--coord); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+  .spec-card { border-top: 3px solid var(--spec); }
+  .skill-tag {
+    display: inline-block; margin-top: 8px; font-size: 11px; padding: 3px 9px;
+    border-radius: 6px; background: rgba(89,195,154,.12); color: var(--skill);
+    border: 1px solid rgba(89,195,154,.3); font-family: ui-monospace, monospace;
+  }
+  .flow { text-align: center; color: var(--line); font-size: 20px; margin: -8px 0; }
+  .data-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+  .data-card { border-left: 3px solid var(--data); }
+  .pipe {
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+    font-family: ui-monospace, monospace; font-size: 12px;
+  }
+  .pipe .step {
+    background: var(--panel-2); border: 1px solid var(--border);
+    padding: 8px 12px; border-radius: 8px; color: var(--text);
+  }
+  .pipe .arr { color: var(--coord); }
+  .critic-card { border-top: 3px dashed var(--critic); }
+  footer { max-width: 1200px; margin: 28px auto 0; color: var(--muted); font-size: 12px; }
+  code { background: var(--panel-2); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+</style>
+</head>
+<body>
+  <h1>Specialist Swarm — Deal Desk Architecture</h1>
+  <p class="sub">Coordinator + specialist sub-agents + custom Skills, built on Claude Managed Agents (multi-agent, beta <code>managed-agents-2026-04-01</code>). An RFP goes in; a branded proposal doc comes out.</p>
+
+  <div class="legend">
+    <span><i class="dot" style="background:var(--coord)"></i>Coordinator</span>
+    <span><i class="dot" style="background:var(--spec)"></i>Specialist sub-agent</span>
+    <span><i class="dot" style="background:var(--skill)"></i>Custom Skill</span>
+    <span><i class="dot" style="background:var(--data)"></i>Synthetic data</span>
+    <span><i class="dot" style="background:var(--critic)"></i>Critic (stretch)</span>
+  </div>
+
+  <div class="col-wrap">
+
+    <!-- Provisioning pipeline -->
+    <div class="stage">
+      <h2>0 · Provisioning pipeline (run once, in order)</h2>
+      <div class="pipe">
+        <span class="step">setup_environment.py<br><small>→ .environment_id</small></span>
+        <span class="arr">→</span>
+        <span class="step">create_specialists.py<br><small>→ .specialist_ids.json</small></span>
+        <span class="arr">→</span>
+        <span class="step">upload_skills.py<br><small>→ .skill_ids.json</small></span>
+        <span class="arr">→</span>
+        <span class="step">create_coordinator.py<br><small>→ .coordinator_id</small></span>
+        <span class="arr">→</span>
+        <span class="step" style="border-color:var(--coord)">run_deal_desk.py<br><small>the swarm</small></span>
+      </div>
+      <p class="card desc" style="background:none;border:none;padding:8px 0 0">Each script talks to the Anthropic Beta API (<code>agents</code>, <code>skills</code>, <code>environments</code>, <code>sessions</code>, <code>files</code>) and persists IDs to dotfiles that the next stage reads.</p>
+    </div>
+
+    <!-- Inputs -->
+    <div class="stage">
+      <h2>1 · Inputs — synthetic-data/ (inlined into the user message)</h2>
+      <div class="data-grid">
+        <div class="card data-card">
+          <div class="title">rfp-acme-corp.md</div>
+          <div class="desc">The inbound RFP that triggers the swarm.</div>
+        </div>
+        <div class="card data-card">
+          <div class="title">past-wins.json</div>
+          <div class="desc">Comparable deals → Pricing Specialist.</div>
+        </div>
+        <div class="card data-card">
+          <div class="title">product-overview.md</div>
+          <div class="desc">Capability map → Technical Fit Specialist.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow">▼&nbsp;&nbsp;run_deal_desk.py opens a session against the coordinator</div>
+
+    <!-- Coordinator -->
+    <div class="stage">
+      <h2>2 · Coordinator (orchestrator)</h2>
+      <div class="card coord-card">
+        <div class="title">Deal Desk Senior Partner
+          <span class="badge" style="background:rgba(217,119,87,.15);color:var(--coord)">claude-opus-4-7</span>
+          <span class="badge" style="background:rgba(217,119,87,.15);color:var(--coord)">multiagent: coordinator</span>
+        </div>
+        <div class="meta">tools: agent_toolset_20260401</div>
+        <div class="desc">Reads the RFP → delegates to all specialists in parallel → synthesises replies → produces the final branded Word doc via the docx skill.</div>
+      </div>
+    </div>
+
+    <div class="flow">▼&nbsp;&nbsp;parallel fan-out (session.thread_created × N)</div>
+
+    <!-- Specialists -->
+    <div class="stage">
+      <h2>3 · Specialist sub-agents (roster) — each with its own Skill</h2>
+      <div class="grid">
+        <div class="card spec-card">
+          <div class="title">Pricing Specialist</div>
+          <div class="meta">claude-sonnet-4-6</div>
+          <div class="desc">Commercial terms, discount band, concessions, margin risk.</div>
+          <span class="skill-tag">🧩 pricing-playbook</span>
+        </div>
+        <div class="card spec-card">
+          <div class="title">Legal Reviewer</div>
+          <div class="meta">claude-sonnet-4-6</div>
+          <div class="desc">Flags clauses vs. standard positions; counter-positions + severity.</div>
+          <span class="skill-tag">🧩 legal-checklist</span>
+        </div>
+        <div class="card spec-card">
+          <div class="title">Technical Fit Specialist</div>
+          <div class="meta">claude-sonnet-4-6</div>
+          <div class="desc">Requirement-by-requirement fit; overall fit score.</div>
+          <span class="skill-tag" style="background:rgba(201,156,240,.12);color:var(--data);border-color:rgba(201,156,240,.3)">📄 product-overview.md</span>
+        </div>
+        <div class="card spec-card">
+          <div class="title">Competitive Intel Analyst</div>
+          <div class="meta">claude-haiku-4-5</div>
+          <div class="desc">Likely competitors, positioning angles, one trap to avoid.</div>
+          <span class="skill-tag">🧩 competitive-intel</span>
+        </div>
+        <div class="card spec-card critic-card">
+          <div class="title">Deal Desk Critic <span class="badge" style="background:rgba(240,198,116,.15);color:var(--critic)">stretch</span></div>
+          <div class="meta">claude-opus-4-7</div>
+          <div class="desc">Reviews the draft → SHIP IT / REVISE / STOP. Added to roster by stretch_critic_subagent.py.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow">▼&nbsp;&nbsp;replies stream back (agent.thread_message_received)</div>
+
+    <!-- Output -->
+    <div class="stage">
+      <h2>4 · Synthesis &amp; output</h2>
+      <div class="card coord-card">
+        <div class="title">Coordinator synthesises → branded Word document (docx skill)</div>
+        <div class="desc">run_deal_desk.py streams events live (the demo), saves the transcript, then downloads every file the container produced into <code>outputs/</code>. <code>download_deliverable.py</code> can re-fetch files from any past session by ID.</div>
+      </div>
+    </div>
+
+    <!-- Skills detail -->
+    <div class="stage">
+      <h2>Skills library — skills/ (uploaded via Skills API)</h2>
+      <div class="data-grid">
+        <div class="card" style="border-left:3px solid var(--skill)"><div class="title">pricing-playbook/SKILL.md</div><div class="desc">→ Pricing</div></div>
+        <div class="card" style="border-left:3px solid var(--skill)"><div class="title">legal-checklist/SKILL.md</div><div class="desc">→ Legal</div></div>
+        <div class="card" style="border-left:3px solid var(--skill)"><div class="title">competitive-intel/SKILL.md</div><div class="desc">→ Competitive</div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    Repo: <code>specialist-swarm</code> · Partner Basecamp 2026 hackathon, track “Skills, plugins &amp; sub-agents”. Diagram generated from source: create_specialists.py, create_coordinator.py, upload_skills.py, setup_environment.py, run_deal_desk.py, download_deliverable.py, stretch_critic_subagent.py.
+  </footer>
+</body>
+</html>

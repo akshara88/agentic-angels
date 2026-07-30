@@ -16,6 +16,7 @@
     --spec: #6ea8fe;
     --skill: #59c39a;
     --data: #c99cf0;
+    --risk: #ef6f6f;
     --critic: #f0c674;
     --line: #3a4152;
   }
@@ -55,6 +56,7 @@
   .coord-card { border-left: 3px solid var(--coord); }
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
   .spec-card { border-top: 3px solid var(--spec); }
+  .risk-card { border-top: 3px solid var(--risk); }
   .skill-tag {
     display: inline-block; margin-top: 8px; font-size: 11px; padding: 3px 9px;
     border-radius: 6px; background: rgba(89,195,154,.12); color: var(--skill);
@@ -78,15 +80,16 @@
 </style>
 </head>
 <body>
-  <h1>Specialist Swarm — Deal Desk Architecture</h1>
-  <p class="sub">Coordinator + specialist sub-agents + custom Skills, built on Claude Managed Agents (multi-agent, beta <code>managed-agents-2026-04-01</code>). An RFP goes in; a branded proposal doc comes out.</p>
+  <h1>Specialist Swarm — Investment Committee Architecture</h1>
+  <p class="sub">A Chair (coordinator) + 7 specialist sub-agents + custom Skills, on Claude Managed Agents (multi-agent, beta <code>managed-agents-2026-04-01</code>). A founder pitch + third-party research goes in; a decision memo (<code>outputs/ic-decision.md</code>) comes out.</p>
 
   <div class="legend">
-    <span><i class="dot" style="background:var(--coord)"></i>Coordinator</span>
-    <span><i class="dot" style="background:var(--spec)"></i>Specialist sub-agent</span>
+    <span><i class="dot" style="background:var(--coord)"></i>Chair / coordinator</span>
+    <span><i class="dot" style="background:var(--spec)"></i>Due-diligence lens</span>
+    <span><i class="dot" style="background:var(--risk)"></i>Risk (adversarial)</span>
+    <span><i class="dot" style="background:var(--critic)"></i>Critic</span>
     <span><i class="dot" style="background:var(--skill)"></i>Custom Skill</span>
     <span><i class="dot" style="background:var(--data)"></i>Synthetic data</span>
-    <span><i class="dot" style="background:var(--critic)"></i>Critic (stretch)</span>
   </div>
 
   <div class="col-wrap">
@@ -97,15 +100,15 @@
       <div class="pipe">
         <span class="step">setup_environment.py<br><small>→ .environment_id</small></span>
         <span class="arr">→</span>
-        <span class="step">create_specialists.py<br><small>→ .specialist_ids.json</small></span>
-        <span class="arr">→</span>
-        <span class="step">upload_skills.py<br><small>→ .skill_ids.json</small></span>
+        <span class="step">create_specialists.py<br><small>→ .specialist_ids.json (7)</small></span>
         <span class="arr">→</span>
         <span class="step">create_coordinator.py<br><small>→ .coordinator_id</small></span>
         <span class="arr">→</span>
+        <span class="step">upload_skills.py<br><small>→ .skill_ids.json</small></span>
+        <span class="arr">→</span>
         <span class="step" style="border-color:var(--coord)">run_deal_desk.py<br><small>the swarm</small></span>
       </div>
-      <p class="card desc" style="background:none;border:none;padding:8px 0 0">Each script talks to the Anthropic Beta API (<code>agents</code>, <code>skills</code>, <code>environments</code>, <code>sessions</code>, <code>files</code>) and persists IDs to dotfiles that the next stage reads.</p>
+      <p class="card desc" style="background:none;border:none;padding:8px 0 0">Each script talks to the Anthropic Beta API (<code>environments</code>, <code>agents</code>, <code>skills</code>, <code>sessions</code>, <code>files</code>) and persists IDs to dotfiles that the next stage reads. <code>upload_skills.py</code> runs <em>after</em> <code>create_coordinator.py</code> because the Chair itself gets a skill (<code>ic-memo-standard</code>).</p>
     </div>
 
     <!-- Inputs -->
@@ -113,70 +116,103 @@
       <h2>1 · Inputs — synthetic-data/ (inlined into the user message)</h2>
       <div class="data-grid">
         <div class="card data-card">
-          <div class="title">rfp-acme-corp.md</div>
-          <div class="desc">The inbound RFP that triggers the swarm.</div>
+          <div class="title">pitch-nimbus-health.md</div>
+          <div class="desc">Founder-authored deal. <strong>UNVERIFIED by construction</strong> — drives the memo's verification section.</div>
         </div>
         <div class="card data-card">
-          <div class="title">past-wins.json</div>
-          <div class="desc">Comparable deals → Pricing Specialist.</div>
+          <div class="title">market-report.md</div>
+          <div class="desc">Third-party → Market Specialist rebuilds TAM bottom-up.</div>
         </div>
         <div class="card data-card">
-          <div class="title">product-overview.md</div>
-          <div class="desc">Capability map → Technical Fit Specialist.</div>
+          <div class="title">competitor-landscape.json</div>
+          <div class="desc">Third-party → Competitive Specialist.</div>
+        </div>
+        <div class="card data-card">
+          <div class="title">saas-benchmarks.json</div>
+          <div class="desc">Third-party → Financial Specialist percentiles.</div>
         </div>
       </div>
+      <p class="card desc" style="background:none;border:none;padding:8px 0 0">The kickoff also carries a <code>RESEARCH DATE</code> and a <code>WEIGHTING PROFILE</code> (<code>seed</code> | <code>growth</code>, via <code>IC_PROFILE</code>). The founder doc is tagged unverified; third-party docs may be cited as verified — the asymmetry is the point.</p>
     </div>
 
-    <div class="flow">▼&nbsp;&nbsp;run_deal_desk.py opens a session against the coordinator</div>
+    <div class="flow">▼&nbsp;&nbsp;run_deal_desk.py opens a session against the coordinator &amp; streams events</div>
 
     <!-- Coordinator -->
     <div class="stage">
-      <h2>2 · Coordinator (orchestrator)</h2>
+      <h2>2 · Coordinator — the Chair (orchestrator)</h2>
       <div class="card coord-card">
-        <div class="title">Deal Desk Senior Partner
+        <div class="title">Investment Committee Chair
           <span class="badge" style="background:rgba(217,119,87,.15);color:var(--coord)">claude-opus-4-7</span>
           <span class="badge" style="background:rgba(217,119,87,.15);color:var(--coord)">multiagent: coordinator</span>
         </div>
-        <div class="meta">tools: agent_toolset_20260401</div>
-        <div class="desc">Reads the RFP → delegates to all specialists in parallel → synthesises replies → produces the final branded Word doc via the docx skill.</div>
+        <div class="meta">tools: agent_toolset_20260401 · skill: 🧩 ic-memo-standard</div>
+        <div class="desc">Reads docs → runs 4 stages: fan out to 5 lenses in parallel → Risk cross-examines → drafts the memo → critic loop (max 2 revisions) → always writes <code>outputs/ic-decision.md</code>. Never averages disagreement away; preserves every UNVERIFIED tag.</div>
       </div>
     </div>
 
-    <div class="flow">▼&nbsp;&nbsp;parallel fan-out (session.thread_created × N)</div>
+    <div class="flow">▼&nbsp;&nbsp;Stage 1 — parallel fan-out, one turn (session.thread_created × 5)</div>
 
-    <!-- Specialists -->
+    <!-- Stage 1 specialists -->
     <div class="stage">
-      <h2>3 · Specialist sub-agents (roster) — each with its own Skill</h2>
+      <h2>3 · Stage 1 — five due-diligence lenses (parallel) — each returns SCORE / CONFIDENCE / TOP RISK</h2>
       <div class="grid">
         <div class="card spec-card">
-          <div class="title">Pricing Specialist</div>
+          <div class="title">Founder Specialist</div>
           <div class="meta">claude-sonnet-4-6</div>
-          <div class="desc">Commercial terms, discount band, concessions, margin risk.</div>
-          <span class="skill-tag">🧩 pricing-playbook</span>
+          <div class="desc">Founder-market fit, execution evidence tiers, team gaps, coachability.</div>
+          <span class="skill-tag">🧩 founder-diligence</span>
         </div>
         <div class="card spec-card">
-          <div class="title">Legal Reviewer</div>
+          <div class="title">Market Specialist</div>
           <div class="meta">claude-sonnet-4-6</div>
-          <div class="desc">Flags clauses vs. standard positions; counter-positions + severity.</div>
-          <span class="skill-tag">🧩 legal-checklist</span>
+          <div class="desc">Rejects deck TAM; rebuilds bottom-up (units × price × attach); why-now.</div>
+          <span class="skill-tag">🧩 market-sizing</span>
         </div>
         <div class="card spec-card">
-          <div class="title">Technical Fit Specialist</div>
+          <div class="title">Product Specialist</div>
           <div class="meta">claude-sonnet-4-6</div>
-          <div class="desc">Requirement-by-requirement fit; overall fit score.</div>
-          <span class="skill-tag" style="background:rgba(201,156,240,.12);color:var(--data);border-color:rgba(201,156,240,.3)">📄 product-overview.md</span>
+          <div class="desc">Shipped vs. described; durable differentiation; demo vs. production.</div>
         </div>
         <div class="card spec-card">
-          <div class="title">Competitive Intel Analyst</div>
-          <div class="meta">claude-haiku-4-5</div>
-          <div class="desc">Likely competitors, positioning angles, one trap to avoid.</div>
-          <span class="skill-tag">🧩 competitive-intel</span>
+          <div class="title">Financial Specialist</div>
+          <div class="meta">claude-sonnet-4-6</div>
+          <div class="desc">Runway, burn multiple, logo churn — computed vs. SaaS benchmark percentiles.</div>
         </div>
-        <div class="card spec-card critic-card">
-          <div class="title">Deal Desk Critic <span class="badge" style="background:rgba(240,198,116,.15);color:var(--critic)">stretch</span></div>
-          <div class="meta">claude-opus-4-7</div>
-          <div class="desc">Reviews the draft → SHIP IT / REVISE / STOP. Added to roster by stretch_critic_subagent.py.</div>
+        <div class="card spec-card">
+          <div class="title">Competitive Specialist</div>
+          <div class="meta">claude-sonnet-4-6</div>
+          <div class="desc">Funded field shape, capital asymmetry, Durable/Temporary/Table-stakes verdicts.</div>
+          <span class="skill-tag">🧩 competitive-battlecards</span>
         </div>
+      </div>
+    </div>
+
+    <div class="flow">▼&nbsp;&nbsp;Stage 2 — five reports pasted VERBATIM into Risk's brief (isolated thread)</div>
+
+    <!-- Stage 2 Risk -->
+    <div class="stage">
+      <h2>4 · Stage 2 — Risk Specialist (adversarial cross-examination)</h2>
+      <div class="card risk-card">
+        <div class="title">Risk Specialist
+          <span class="badge" style="background:rgba(239,111,111,.15);color:var(--risk)">claude-opus-4-7</span>
+        </div>
+        <div class="meta">gathers no new evidence · cannot see the Chair's conversation</div>
+        <div class="desc">Cross-examines the five reports for CONTRADICTIONS, BLIND SPOTS, UNSUPPORTED CONFIDENCE, and the one thing that kills the deal. Surfaces conflicts — never resolves them. Ends with BLOCKERS / TOP RISK.</div>
+      </div>
+    </div>
+
+    <div class="flow">▼&nbsp;&nbsp;Stage 3 — Chair drafts memo (no delegation) using ic-memo-standard</div>
+    <div class="flow">▼&nbsp;&nbsp;Stage 4 — six reports + draft pasted into Critic's brief</div>
+
+    <!-- Stage 4 Critic -->
+    <div class="stage">
+      <h2>5 · Stage 4 — IC Critic (review loop, max 2 revisions)</h2>
+      <div class="card critic-card">
+        <div class="title">IC Critic
+          <span class="badge" style="background:rgba(240,198,116,.15);color:var(--critic)">claude-opus-4-7</span>
+        </div>
+        <div class="meta">leads with VERDICT: SHIP IT | REVISE | STOP</div>
+        <div class="desc">Checks the draft against the reports: bland consensus, missing ## Tensions, stripped UNVERIFIED tags, wrong weighting arithmetic, unsourced figures, ignored blockers. <code>run_deal_desk.py</code> surfaces the verdict live on the event stream. STOP → memo finalises as RECOMMENDATION: PASS, not abandoned.</div>
       </div>
     </div>
 
@@ -184,27 +220,29 @@
 
     <!-- Output -->
     <div class="stage">
-      <h2>4 · Synthesis &amp; output</h2>
+      <h2>6 · Output</h2>
       <div class="card coord-card">
-        <div class="title">Coordinator synthesises → branded Word document (docx skill)</div>
-        <div class="desc">run_deal_desk.py streams events live (the demo), saves the transcript, then downloads every file the container produced into <code>outputs/</code>. <code>download_deliverable.py</code> can re-fetch files from any past session by ID.</div>
+        <div class="title">Chair writes <code>outputs/ic-decision.md</code></div>
+        <div class="desc">Every path ends in a written memo — SHIP IT, REVISE-twice, or STOP. <code>run_deal_desk.py</code> streams events live (the demo), saves <code>coordinator-transcript.txt</code>, then downloads every file the container produced into <code>outputs/</code>. <code>download_deliverable.py</code> re-fetches files from any past session by ID.</div>
       </div>
     </div>
 
     <!-- Skills detail -->
     <div class="stage">
-      <h2>Skills library — skills/ (uploaded via Skills API)</h2>
+      <h2>Skills library — skills/ (uploaded via Skills API, attached per-agent)</h2>
       <div class="data-grid">
-        <div class="card" style="border-left:3px solid var(--skill)"><div class="title">pricing-playbook/SKILL.md</div><div class="desc">→ Pricing</div></div>
-        <div class="card" style="border-left:3px solid var(--skill)"><div class="title">legal-checklist/SKILL.md</div><div class="desc">→ Legal</div></div>
-        <div class="card" style="border-left:3px solid var(--skill)"><div class="title">competitive-intel/SKILL.md</div><div class="desc">→ Competitive</div></div>
+        <div class="card" style="border-left:3px solid var(--skill)"><div class="title">founder-diligence/SKILL.md</div><div class="desc">→ Founder Specialist</div></div>
+        <div class="card" style="border-left:3px solid var(--skill)"><div class="title">market-sizing/SKILL.md</div><div class="desc">→ Market Specialist</div></div>
+        <div class="card" style="border-left:3px solid var(--skill)"><div class="title">competitive-battlecards/SKILL.md</div><div class="desc">→ Competitive Specialist</div></div>
+        <div class="card" style="border-left:3px solid var(--coord)"><div class="title">ic-memo-standard/SKILL.md</div><div class="desc">→ Chair (memo structure + weighting tables)</div></div>
       </div>
+      <p class="card desc" style="background:none;border:none;padding:8px 0 0">Additional skills exist in <code>skills/</code> (competitive-intel, legal-checklist, pricing-playbook, ic-memo-standard) but only the four above are wired up by <code>upload_skills.py</code>.</p>
     </div>
 
   </div>
 
   <footer>
-    Repo: <code>specialist-swarm</code> · Partner Basecamp 2026 hackathon, track “Skills, plugins &amp; sub-agents”. Diagram generated from source: create_specialists.py, create_coordinator.py, upload_skills.py, setup_environment.py, run_deal_desk.py, download_deliverable.py, stretch_critic_subagent.py.
+    Repo: <code>specialist-swarm</code> · Partner Basecamp 2026 hackathon, track “Skills, plugins &amp; sub-agents”. Diagram generated from source: setup_environment.py, create_specialists.py, create_coordinator.py, upload_skills.py, run_deal_desk.py, download_deliverable.py, stretch_critic_subagent.py.
   </footer>
 </body>
 </html>

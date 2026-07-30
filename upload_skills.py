@@ -18,11 +18,14 @@ from anthropic import Anthropic
 from anthropic.lib import files_from_dir
 
 
-# Map skill directory name → specialist key that should get it
+# Map skill directory name → agent key that should get it.
+# "coordinator" resolves from .coordinator_id, every other key from
+# .specialist_ids.json — so create_coordinator.py must run BEFORE this script.
 SKILL_TO_SPECIALIST = {
-    "pricing-playbook": "pricing",
-    "legal-checklist":  "legal",
-    "competitive-intel": "competitive",
+    "founder-diligence":       "founder",
+    "market-sizing":           "market",
+    "competitive-battlecards": "competitive",
+    "ic-memo-standard":        "coordinator",
 }
 
 
@@ -33,7 +36,21 @@ def main() -> None:
     specialist_ids_path = Path(".specialist_ids.json")
     if not specialist_ids_path.exists():
         raise SystemExit("Run create_specialists.py first.")
-    specialist_ids = json.loads(specialist_ids_path.read_text())
+    agent_ids = json.loads(specialist_ids_path.read_text())
+
+    # The Chair gets a skill too (ic-memo-standard), so its ID must resolve here.
+    # agents.update preserves every field you omit, so attaching a skill leaves
+    # the coordinator's multiagent roster intact.
+    coordinator_path = Path(".coordinator_id")
+    if coordinator_path.exists():
+        agent_ids["coordinator"] = coordinator_path.read_text().strip()
+
+    missing = {v for v in SKILL_TO_SPECIALIST.values() if v not in agent_ids}
+    if missing:
+        raise SystemExit(
+            f"No agent ID for {sorted(missing)}. Run create_specialists.py AND "
+            "create_coordinator.py before this script."
+        )
 
     client = Anthropic()
 
@@ -70,20 +87,23 @@ def main() -> None:
             print(f"  -> {skill.id}")
 
         # 2. Attach to the matching specialist by updating its skills array
-        specialist_id = specialist_ids[specialist_key]
+        specialist_id = agent_ids[specialist_key]
         skill_id = uploaded[skill_name]
-        print(f"  attaching to specialist `{specialist_key}` ({specialist_id})...")
+        print(f"  attaching to `{specialist_key}` ({specialist_id})...")
 
         current = client.beta.agents.retrieve(specialist_id)
-        # Avoid duplicate attachment on re-run
-        already_attached = any(
-            s.get("skill_id") == skill_id for s in (current.skills or [])
-        )
-        if already_attached:
+        # agents.retrieve returns skills as Pydantic models, not dicts. Normalise
+        # to dicts so both the duplicate check and the update payload work on a
+        # re-run (the raw models would blow up on .get and on serialisation).
+        current_skills = [
+            s if isinstance(s, dict) else s.model_dump(exclude_none=True)
+            for s in (current.skills or [])
+        ]
+        if any(s.get("skill_id") == skill_id for s in current_skills):
             print(f"  already attached ✓ (skipping)")
             continue
 
-        new_skills = list(current.skills or []) + [
+        new_skills = current_skills + [
             {"type": "custom", "skill_id": skill_id, "version": "latest"}
         ]
         client.beta.agents.update(

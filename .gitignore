@@ -1,0 +1,20 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Secrets — never commit these
+.env
+
+# Runtime state written by the scripts (agent/session/environment IDs)
+.environment_id
+.coordinator_id
+.specialist_ids.json
+.skill_ids.json
+.last_session_id
+
+# Generated deliverables
+outputs/
+
+# macOS
+.DS_Store

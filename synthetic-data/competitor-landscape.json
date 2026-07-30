@@ -1,0 +1,96 @@
+{
+  "_source": "third-party",
+  "_note": "Synthetic competitor dataset for committee evaluation. Company names are fictional. Figures may be treated as verified evidence.",
+  "report_date": "2026-06-30",
+  "segment": "Ambient clinical documentation, US ambulatory",
+
+  "field_summary": {
+    "funded_competitors": 6,
+    "total_capital_raised_usd": 492000000,
+    "largest_single_raise_usd": 182000000,
+    "median_raise_usd": 66000000,
+    "consolidation_status": "unconsolidated",
+    "new_entrants_last_24_months": 4,
+    "shutdowns_last_24_months": 2,
+    "observed_accuracy_claims_range_pct": [95.0, 98.4],
+    "note": "Every funded player publishes an accuracy figure between 95% and 98.4%. Accuracy is a published table-stakes claim in this category, not a differentiator."
+  },
+
+  "competitors": [
+    {
+      "name": "Scribeline",
+      "capital_raised_usd": 182000000,
+      "last_round": "Series C",
+      "estimated_arr_usd": 46000000,
+      "primary_buyer": "enterprise health systems",
+      "specialty_focus": false,
+      "published_accuracy_pct": 98.4,
+      "strengths": ["distribution through 3 major EHR marketplaces", "enterprise security posture", "can fund a multi-year land-and-expand"],
+      "weaknesses": ["general model, weak on specialty vocabulary", "9-14 month enterprise sales cycle", "minimum contract sizes price out mid-market clinics"]
+    },
+    {
+      "name": "Auralis Health",
+      "capital_raised_usd": 115000000,
+      "last_round": "Series B",
+      "estimated_arr_usd": 28000000,
+      "primary_buyer": "large multi-site groups",
+      "specialty_focus": false,
+      "published_accuracy_pct": 97.9,
+      "strengths": ["strongest brand recall among clinicians", "aggressive free-pilot motion", "sub-3-second generation"],
+      "weaknesses": ["heavy discounting has compressed realised ACV", "no per-specialty tuning", "EHR write-back via middleware partner"]
+    },
+    {
+      "name": "MedNote AI",
+      "capital_raised_usd": 74000000,
+      "last_round": "Series B",
+      "estimated_arr_usd": 19000000,
+      "primary_buyer": "mid-market clinics",
+      "specialty_focus": false,
+      "published_accuracy_pct": 96.5,
+      "strengths": ["fastest mid-market sales cycle in category (52 days)", "self-serve onboarding"],
+      "weaknesses": ["thin clinical QA function", "two publicised note-accuracy incidents in 2025"]
+    },
+    {
+      "name": "Cadence Clinical",
+      "capital_raised_usd": 58000000,
+      "last_round": "Series A extension",
+      "estimated_arr_usd": 11000000,
+      "primary_buyer": "specialty practices",
+      "specialty_focus": true,
+      "specialties_covered": ["cardiology", "oncology", "endocrinology"],
+      "published_accuracy_pct": 97.1,
+      "strengths": ["direct specialty positioning", "specialty-tuned models shipped since 2025", "overlaps Nimbus on endocrinology"],
+      "weaknesses": ["has not cracked rheumatology or GI", "founder-led sales, similar scaling constraint"]
+    },
+    {
+      "name": "Verbatim Health",
+      "capital_raised_usd": 41000000,
+      "last_round": "Series A",
+      "estimated_arr_usd": 8000000,
+      "primary_buyer": "mid-market clinics",
+      "specialty_focus": false,
+      "published_accuracy_pct": 95.0,
+      "strengths": ["lowest price point in category", "strong in practices replacing outsourced transcription"],
+      "weaknesses": ["commoditised positioning", "gross margin reported under pressure"]
+    },
+    {
+      "name": "Otoscribe",
+      "capital_raised_usd": 22000000,
+      "last_round": "Seed extension",
+      "estimated_arr_usd": 3000000,
+      "primary_buyer": "specialty practices",
+      "specialty_focus": true,
+      "specialties_covered": ["gastroenterology", "rheumatology"],
+      "published_accuracy_pct": 96.8,
+      "strengths": ["direct overlap with Nimbus target specialties", "clinician-founded, similar credibility story"],
+      "weaknesses": ["smallest war chest in the funded field", "single-EHR integration only"]
+    }
+  ],
+
+  "structural_observations": [
+    "Two competitors (Cadence Clinical, Otoscribe) already occupy the 'specialty-tuned, not horizontal' position. It is a contested position, not an empty one.",
+    "Per-specialty fine-tuning is shipped by at least one funded competitor since 2025.",
+    "The two shutdowns in the last 24 months were both sub-$15M-raised entrants that could not fund a sales motion against the leaders.",
+    "No player has achieved above 6% share of the 5+ clinician segment. The field is crowded but nobody has won."
+  ]
+}

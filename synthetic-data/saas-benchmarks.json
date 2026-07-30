@@ -1,0 +1,64 @@
+{
+  "_source": "third-party",
+  "_note": "Synthetic benchmark dataset for committee evaluation. Percentiles drawn from seed and Series-A stage vertical B2B SaaS. Figures may be treated as verified evidence.",
+  "report_date": "2026-06-30",
+  "cohort": "Vertical B2B SaaS, $500K-$3M ARR, last financing at seed or Series A",
+  "sample_size": 428,
+
+  "benchmarks": {
+    "gross_margin_pct": {
+      "p25": 68,
+      "p50": 76,
+      "p75": 84,
+      "note": "AI-inference-heavy companies cluster 8-14 points below the cohort median at this stage. Sub-65% at seed is a flag: it constrains the Series A story unless a credible cost curve is shown."
+    },
+    "net_dollar_retention_pct": {
+      "p25": 98,
+      "p50": 112,
+      "p75": 128,
+      "note": "Below 105% at this stage usually indicates seat expansion is not yet working, or churn is offsetting expansion."
+    },
+    "cac_payback_months": {
+      "p25": 19,
+      "p50": 14,
+      "p75": 9,
+      "note": "Lower is better. Founder-led sales frequently reports an artificially strong payback because founder time is not loaded into CAC. Ask whether founder cost is included."
+    },
+    "burn_multiple": {
+      "p25": 2.4,
+      "p50": 1.6,
+      "p75": 1.0,
+      "definition": "net burn / net new ARR over the same period. Lower is better.",
+      "note": "Under 1.5 at seed is efficient. Burn multiple measures efficiency, not survival - read it alongside runway, never instead of it."
+    },
+    "arr_growth_yoy_pct": {
+      "p25": 140,
+      "p50": 230,
+      "p75": 400
+    },
+    "runway_months": {
+      "p25": 14,
+      "p50": 19,
+      "p75": 26,
+      "distress_threshold": 6,
+      "note": "Below 6 months the company is raising from a position of weakness, and terms reflect it. Below 4 months, bridge risk becomes the dominant term in the negotiation regardless of operating performance."
+    },
+    "logo_churn_annual_pct": {
+      "p25": 18,
+      "p50": 11,
+      "p75": 5,
+      "note": "At small logo counts, compute churn from onboarded-versus-live counts rather than a reported rate. A gap between 'onboarded to date' and 'currently live' is churn."
+    },
+    "months_of_runway_post_round": {
+      "p50": 24,
+      "note": "A round sized to exactly 24 months at current burn leaves no margin for the burn increase that hiring plans imply."
+    }
+  },
+
+  "evaluation_guidance": [
+    "Compute runway independently as cash / net burn. Do not accept a stated runway figure.",
+    "Recompute burn multiple as (net burn over period) / (net new ARR over same period).",
+    "Where a deck reports 'onboarded' and 'live' counts separately, the difference is churn and should be stated as such.",
+    "Where gross margin is below the p25 and the company projects improvement, require the mechanism and the timeline before crediting the projection."
+  ]
+}

@@ -1,33 +1,46 @@
 """
-Run the Deal Desk swarm against the synthetic RFP.
+Run the Investment Committee swarm against a synthetic deal.
 
-Inlines the RFP + past-wins + product-overview into the user message (simpler
+Inlines the founder pitch + third-party research into the user message (simpler
 than Files API for hackathon-scale content). Streams events as they come in so
-you can watch the parallel thread fan-out — this is the demo, narrate it live.
+you can watch the five-way parallel fan-out, then the Risk cross-examination,
+then the critic loop — this is the demo, narrate it live.
 
-Saves the final transcript to outputs/.
+Saves the transcript to outputs/ and downloads whatever the agents wrote,
+including outputs/ic-decision.md.
 
 Usage:
-    python run_deal_desk.py
+    python run_deal_desk.py                       # seed-stage weighting
+    IC_PROFILE=growth python run_deal_desk.py     # growth-stage weighting
 """
 
 import os
+from datetime import date
 from pathlib import Path
 
 from anthropic import Anthropic
 
 
-RFP_PATH = Path("synthetic-data/rfp-acme-corp.md")
+# Founder-authored. Everything in it is UNVERIFIED by construction.
+DEAL_PATH = Path("synthetic-data/pitch-nimbus-health.md")
+
+# Third-party. These may be cited as verified evidence. The asymmetry between
+# these and DEAL_PATH is the point — it drives the memo's verification section.
 SUPPORTING_FILES = [
-    Path("synthetic-data/past-wins.json"),
-    Path("synthetic-data/product-overview.md"),
+    Path("synthetic-data/market-report.md"),
+    Path("synthetic-data/competitor-landscape.json"),
+    Path("synthetic-data/saas-benchmarks.json"),
 ]
 OUTPUT_DIR = Path("outputs")
+
+# The Chair applies one of these. The weight tables live in the
+# ic-memo-standard skill; only the profile name travels in the kickoff.
+WEIGHTING_PROFILES = ("seed", "growth")
 
 
 def load_inputs_as_context() -> str:
     blocks = []
-    for path in [RFP_PATH, *SUPPORTING_FILES]:
+    for path in [DEAL_PATH, *SUPPORTING_FILES]:
         if not path.exists():
             print(f"  WARNING: {path} missing — skipping")
             continue
@@ -49,29 +62,43 @@ def main() -> None:
     coordinator_id = Path(".coordinator_id").read_text().strip()
     environment_id = Path(".environment_id").read_text().strip()
 
+    profile = os.environ.get("IC_PROFILE", "seed").strip().lower()
+    if profile not in WEIGHTING_PROFILES:
+        raise SystemExit(
+            f"IC_PROFILE must be one of {WEIGHTING_PROFILES}, got {profile!r}"
+        )
+
     client = Anthropic()
 
-    print("Loading RFP + supporting docs...")
+    print("Loading deal materials...")
     context = load_inputs_as_context()
 
+    research_date = date.today().isoformat()
     print(f"\nStarting session against coordinator {coordinator_id}...")
+    print(f"  weighting profile: {profile}   research date: {research_date}")
     session = client.beta.sessions.create(
         agent=coordinator_id,
         environment_id=environment_id,
-        title="Deal Desk — Acme Corp RFP",
+        title=f"IC — {DEAL_PATH.stem} ({profile})",
     )
     Path(".last_session_id").write_text(session.id)
 
     user_message = (
-        "An RFP has just landed. Please run the standard Deal Desk process:\n"
-        "1. Read the RFP yourself.\n"
-        "2. Delegate to all four specialists in parallel.\n"
-        "3. Synthesise their replies.\n"
-        "4. Produce the final proposal response as a branded Word document "
-        "if you have access to a docx skill; otherwise output the response "
-        "as a structured markdown document.\n\n"
-        "Specialists have their own skills attached for their respective "
-        "domains. Move fast — the RFP deadline is real.\n\n"
+        "A startup has been submitted to the Investment Committee for a funding "
+        "decision. Chair the committee end to end.\n\n"
+        f"RESEARCH DATE: {research_date}\n"
+        f"WEIGHTING PROFILE: {profile}\n\n"
+        "Run all four stages:\n"
+        "1. Read the documents yourself.\n"
+        "2. Delegate to all FIVE due-diligence lenses IN PARALLEL, in one turn.\n"
+        "3. Then delegate to the Risk Specialist, pasting all five reports into "
+        "its brief VERBATIM — it cannot see your conversation.\n"
+        "4. Draft the memo using the ic-memo-standard skill, then run the "
+        "critic loop with the IC Critic (max two revisions), and write the "
+        "final memo to outputs/ic-decision.md.\n\n"
+        "The first document below is founder-provided and UNVERIFIED. The rest "
+        "are third-party and may be cited as verified. Do not run web searches "
+        "— everything you need is here.\n\n"
         f"{context}"
     )
 
@@ -98,6 +125,14 @@ def main() -> None:
                 print(f"  [thread running]   {name}", flush=True)
             elif t == "agent.thread_message_received":
                 print(f"  [reply ←]          {event.from_agent_name}", flush=True)
+                # Make the critic loop legible on the stream.
+                reply = " ".join(
+                    b.text for b in (event.content or [])
+                    if getattr(b, "type", None) == "text"
+                )
+                if "VERDICT:" in reply:
+                    verdict = reply.split("VERDICT:", 1)[1].strip().split("\n")[0]
+                    print(f"  [VERDICT]          {verdict[:60]}", flush=True)
             elif t == "agent.thread_message_sent":
                 print(f"  [delegate →]       {event.to_agent_name}", flush=True)
             elif t == "agent.message":
@@ -107,8 +142,20 @@ def main() -> None:
                         print(block.text, end="", flush=True)
             elif t == "agent.tool_use":
                 print(f"\n  [tool: {getattr(event, 'name', '?')}]", flush=True)
+            elif t == "session.error":
+                print(f"\n  [session error]    {getattr(event, 'message', event)}",
+                      flush=True)
+            elif t == "session.status_terminated":
+                print("\n\n[session terminated]")
+                break
             elif t == "session.status_idle":
-                print("\n\n[swarm finished]")
+                # Idle is not automatically terminal: the session also parks here
+                # when it needs something from us. Only a non-requires_action
+                # stop_reason means the committee is actually done.
+                stop = getattr(event, "stop_reason", None)
+                if getattr(stop, "type", None) == "requires_action":
+                    continue
+                print("\n\n[committee finished]")
                 break
 
     OUTPUT_DIR.mkdir(exist_ok=True)
